@@ -88,6 +88,29 @@ export default function Page(){
     if(!waPhone){ alert('WhatsApp inválido.'); return; }
     try{
       const blob = await buildPdf(state);
+      // Link-first: try SSR upload to get a public URL
+      try{
+        const base64A = await new Promise((resolve, reject)=>{
+          const r = new FileReader();
+          r.onload = () => { const res = String(r.result || ''); resolve(res.split(',').pop() || ''); };
+          r.onerror = (e)=> reject(e);
+          r.readAsDataURL(blob);
+        });
+        const fileNameA = `orcamento-TEPintura-${state.meta.number}.pdf`;
+        const res = await fetch(`/api/whatsapp/upload?t=${Date.now()}`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
+          cache:'no-store',
+          body: JSON.stringify({ fileName: fileNameA, pdfBase64: base64A })
+        });
+        const json = await res.json().catch(()=>null);
+        if(res.ok && json && json.url){
+          const msg = `Orcamento TE Pintura No ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF: ${json.url}`;
+          const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(msg)}`;
+          window.open(waUrl, '_blank');
+          return;
+        }
+      }catch(_){ /* continue to native share or old path */ }
       // Tenta compartilhar o arquivo nativamente (Android) antes de gerar link
       try {
         const file = new File([blob], `orcamento-TEPintura-${state.meta.number}.pdf`, { type: 'application/pdf' });
@@ -306,7 +329,7 @@ export default function Page(){
           <div className="card p-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button className="btn btn-outline" onClick={onClear}>Limpar</button>
             <button className="btn btn-outline" onClick={onGenerate}>Baixar PDF</button>
-            <button className="btn btn-primary" onClick={onSendWhatsAppLinkFirst}>Enviar no WhatsApp</button>
+            <button className="btn btn-primary" onClick={onSendWhatsApp}>Enviar no WhatsApp</button>
           </div>
           <div className="mt-2">
             <InstallPromptButton />
