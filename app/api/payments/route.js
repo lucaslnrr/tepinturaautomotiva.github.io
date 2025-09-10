@@ -3,10 +3,14 @@ import { readPaymentsFromBlob, writePaymentsToBlob } from '@/lib/blob-services';
 
 export async function GET(req){
   const { searchParams } = new URL(req.url);
-  const q = (searchParams.get('q') || '').trim().toLowerCase();
+  const qRaw = (searchParams.get('q') || '').trim();
+  const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const q = norm(qRaw);
   try{
     const list = await readPaymentsFromBlob();
-    const items = q ? list.filter(x => (x.name||'').toLowerCase().includes(q)).slice(0, 20) : list.slice(0, 20);
+    const items = q
+      ? list.filter(x => norm(x.name).includes(q)).slice(0, 20)
+      : list.slice(0, 20);
     return NextResponse.json({ items });
   }catch(e){
     return NextResponse.json({ error:'failed', message:String(e) }, { status:500 });
@@ -28,4 +32,3 @@ export async function POST(req){
     return NextResponse.json({ error:'failed', message:String(e) }, { status:500 });
   }
 }
-

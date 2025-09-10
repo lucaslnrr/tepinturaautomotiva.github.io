@@ -3,7 +3,7 @@ const CACHE_NAME = 'tepintura-cache-v1';
 const CORE_ASSETS = [
   './',
   'manifest.webmanifest',
-  'logo_te.svg',
+  'tepinturalogo.png',
   'icons/icon-192.png',
   'icons/icon-512.png'
 ];

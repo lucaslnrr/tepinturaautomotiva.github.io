@@ -18,14 +18,13 @@ export default function ServiceAutocomplete({ value, onChange, onSelect, placeho
 
   useEffect(() => {
     const query = q.trim();
-    if (!query) { setItems([]); return; }
     const controller = new AbortController();
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = controller;
     const t = setTimeout(async () => {
       try {
         const url = new URL(src, window.location.origin);
-        url.searchParams.set('q', query);
+        if (query) url.searchParams.set('q', query);
         if (extraParams && typeof extraParams === 'object') {
           for (const [k, v] of Object.entries(extraParams)) {
             if (v != null && String(v).trim() !== '') url.searchParams.set(k, String(v));
@@ -38,7 +37,7 @@ export default function ServiceAutocomplete({ value, onChange, onSelect, placeho
       } catch (_) { /* ignore */ }
     }, 200);
     return () => { clearTimeout(t); controller.abort(); };
-  }, [q]);
+  }, [q, src]);
 
   function pick(item){
     setOpen(false);
@@ -53,7 +52,28 @@ export default function ServiceAutocomplete({ value, onChange, onSelect, placeho
         placeholder={placeholder}
         value={q}
         onChange={(e)=>{ setQ(e.target.value); onChange?.(e.target.value); setOpen(true); }}
-        onFocus={()=> setOpen(true)}
+        onFocus={async ()=> {
+          setOpen(true);
+          // If nothing loaded yet, pre-load defaults (top items) so it works even with a prefilled value
+          if (items.length === 0) {
+            try {
+              const controller = new AbortController();
+              if (abortRef.current) abortRef.current.abort();
+              abortRef.current = controller;
+              const url = new URL(src, window.location.origin);
+              if (extraParams && typeof extraParams === 'object') {
+                for (const [k, v] of Object.entries(extraParams)) {
+                  if (v != null && String(v).trim() !== '') url.searchParams.set(k, String(v));
+                }
+              }
+              const res = await fetch(url.toString(), { signal: controller.signal });
+              if (res.ok) {
+                const json = await res.json();
+                setItems(Array.isArray(json.items) ? json.items : []);
+              }
+            } catch (_) { /* ignore */ }
+          }
+        }}
         autoComplete="off"
       />
       {open && items.length > 0 && (

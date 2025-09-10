@@ -8,8 +8,8 @@ import ServiceAutocomplete from '@/components/ServiceAutocomplete';
 const initialState = {
   company: { contacts: 'R. Willy Thowart, 10 - Boa Vista, São Mateus - ES, 29931-310' },
   meta: {
-    number: genNumber(),
-    date: new Date().toLocaleDateString('pt-BR'),
+    number: '',
+    date: '',
     validade: 3,
     seller: 'Tiago',
     pagamento: 'PIX / Cartão / À vista',
@@ -35,16 +35,28 @@ function reducer(state, action){
     case 'ITEM_ADD': return { ...state, items:[...state.items, { desc:'', unit:'' }] };
     case 'ITEM_REMOVE':
       const arr = state.items.slice(); arr.splice(action.index,1); return { ...state, items: arr.length?arr:[{desc:'',unit:''}] };
-    case 'RESET': return initialState;
+    case 'RESET': return { ...initialState, meta: { ...initialState.meta, pagamento: '' } };
     default: return state;
   }
 }
 
 export default function Page(){
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, { ...initialState, meta: { ...initialState.meta, pagamento: '' } });
 
   useEffect(()=>{ try{ localStorage.setItem('orc_te', JSON.stringify(state)); }catch(e){} },[state]);
-  useEffect(()=>{ try{ const s = JSON.parse(localStorage.getItem('orc_te')); if(s) dispatch({type:'SET', payload:s}); }catch(e){} },[]);
+  useEffect(()=>{ 
+    try{ 
+      const s = JSON.parse(localStorage.getItem('orc_te')) || {}; 
+      const meta = {
+        ...(s.meta || {}),
+        number: (s.meta && s.meta.number) ? s.meta.number : genNumber(),
+        date: (s.meta && s.meta.date) ? s.meta.date : new Date().toLocaleDateString('pt-BR'),
+        pagamento: (s.meta && Object.prototype.hasOwnProperty.call(s.meta, 'pagamento')) ? s.meta.pagamento : ''
+      };
+      const payload = { ...initialState, ...s, meta };
+      dispatch({type:'SET', payload}); 
+    }catch(e){} 
+  },[]);
 
   const totals = useMemo(()=>{
     const subtotal = state.items.reduce((acc,it)=> acc + parseBR(it.unit||0), 0);
@@ -68,27 +80,36 @@ export default function Page(){
   }
 
   async function onSendWhatsApp(){
-    const phone = state.client.whatsapp;
-    if(!phone){ alert('Preencha o WhatsApp do cliente.'); return; }
+    const phoneRaw = state.client.whatsapp;
+    if(!phoneRaw){ alert('Preencha o WhatsApp do cliente.'); return; }
+    const phoneDigits = String(phoneRaw).replace(/\D+/g,'');
+    const waPhone = normalizeWhatsAppNumberBR(phoneDigits);
+    if(!waPhone){ alert('WhatsApp inválido.'); return; }
     try{
       const blob = await buildPdf(state);
-      const arrayBuffer = await blob.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      const fileName = `orcamento-TEPintura-${state.meta.number}.pdf`;
-      const res = await fetch('/api/whatsapp/send',{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ phone, fileName, pdfBase64: base64 })
+      const base64 = await new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.onload = () => { const res = String(reader.result || ''); resolve(res.split(',').pop() || ''); };
+        reader.onerror = (e)=> reject(e);
+        reader.readAsDataURL(blob);
       });
-      if(!res.ok){
-        const err = await res.json().catch(()=>({}));
-        console.error('WhatsApp send error', err);
-        alert('Falha ao enviar no WhatsApp. Verifique configurações no servidor.');
+      const fileName = `orcamento-TEPintura-${state.meta.number}.pdf`;
+      const upload = await fetch('/api/whatsapp/upload',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ fileName, pdfBase64: base64 })
+      });
+      const data = await upload.json();
+      if(!upload.ok || !data?.url){
+        console.error('Upload failed', data);
+        alert('Falha ao subir PDF para compartilhamento.');
         return;
       }
-      alert('Enviado ao WhatsApp!');
+      const msg = `Orçamento TE Pintura Nº ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF: ${data.url}`;
+      const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(msg)}`;
+      window.open(waUrl, '_blank');
     }catch(e){
       console.error(e);
-      alert('Erro ao gerar/enviar PDF.');
+      alert('Erro ao gerar/compartilhar PDF.');
     }
   }
 
@@ -102,7 +123,7 @@ export default function Page(){
   return (
     <div className="container py-3">
       <header className="flex flex-wrap items-center gap-3 my-2">
-        <img src="/logo_te.svg" alt="TE Pintura" className="h-10 w-auto"/>
+        <img src="/tepinturalogo.png" alt="TE Pintura" className="h-10 w-auto"/>
         <div>
           <div className="text-lg font-bold">Talão de Orçamento</div>
           <div className="text-xs text-gray-500">TE Pintura Automotiva</div>
@@ -154,11 +175,27 @@ export default function Page(){
                      onChange={e=>dispatch({type:'FIELD', path:['meta','validade'], value:e.target.value})}/>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <div className="label">Forma de pagamento</div>
+              <ServiceAutocomplete
+                src="/api/payments"
+                placeholder="Forma de pagamento"
+                value={state.meta.pagamento}
+                onChange={(val)=>dispatch({type:'FIELD', path:['meta','pagamento'], value: val})}
+              />
+            </div>
+            <div>
+              <div className="label">Prazo de entrega</div>
+              <input className="input" placeholder="Prazo de entrega" value={state.meta.prazo} onChange={e=>dispatch({type:'FIELD', path:['meta','prazo'], value:e.target.value})}/>
+            </div>
+          </div>
         </section>
 
         <section className="card p-3 grid gap-3">
           <div className="text-sm font-semibold text-gray-600">Dados do veículo</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="hidden">
             <ServiceAutocomplete
               src="/api/brands"
               placeholder="Marca"
@@ -179,7 +216,7 @@ export default function Page(){
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <ServiceAutocomplete
               src="/api/payments"
-              placeholder="Forma de pagamento (ex.: PIX / Cartão / 3x)"
+              placeholder=""
               value={state.meta.pagamento}
               onChange={(val)=>dispatch({type:'FIELD', path:['meta','pagamento'], value: val})}
             />
@@ -261,4 +298,15 @@ function parseBR(x){
 
 function brl(n){
   return new Intl.NumberFormat('pt-BR', {style:'currency',currency:'BRL'}).format(Number(n||0));
+}
+
+// Normalize to WhatsApp international format for Brazil when users type only DDD+number.
+function normalizeWhatsAppNumberBR(digits){
+  let d = String(digits||'').replace(/\D+/g,'');
+  if(!d) return '';
+  d = d.replace(/^0+/, '');
+  if(d.startsWith('55')) return d;
+  // If user typed DDD + number (10 or 11 digits), prefix country code 55
+  if(d.length === 11 || d.length === 10) return '55' + d;
+  return d; // otherwise return as-is
 }
