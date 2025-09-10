@@ -102,7 +102,9 @@ export default function Page(){
       const data = await upload.json();
       if(!upload.ok || !data?.url){
         console.error('Upload failed', data);
-        alert('Falha ao subir PDF para compartilhamento.');
+        const baseMsg = `Or	amento TE Pintura N	 ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF enviado separadamente.`;
+        const waUrlFallback = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(baseMsg)}`;
+        window.open(waUrlFallback, '_blank');
         return;
       }
       const msg = `Orçamento TE Pintura Nº ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF: ${data.url}`;
