@@ -8,10 +8,9 @@ export default function ServiceWorkerRegister() {
       const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
       if (!isSecure) return; // SW requires secure context
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.register('sw.js').catch(() => {});
       });
     }
   }, []);
   return null;
 }
-

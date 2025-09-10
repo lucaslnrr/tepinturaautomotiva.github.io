@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useReducer } from 'react';
 import ItemRow from '@/components/ItemRow';
+import InstallPromptButton from '@/components/InstallPromptButton';
 import { buildPdf } from '@/lib/pdf';
 
 const initialState = {
@@ -195,6 +196,9 @@ export default function Page(){
           <div className="card p-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button className="btn btn-outline" onClick={onClear}>Limpar</button>
             <button className="btn btn-primary" onClick={onGenerate}>Gerar PDF & Compartilhar</button>
+          </div>
+          <div className="mt-2">
+            <InstallPromptButton />
           </div>
           <p className="text-[11px] text-gray-500 text-center mt-1">O botão de compartilhar usa o recurso nativo do Android quando disponível.</p>
         </div>

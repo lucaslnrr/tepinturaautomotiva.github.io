@@ -1,9 +1,11 @@
 // Basic offline-first service worker for static export / GitHub Pages
 const CACHE_NAME = 'tepintura-cache-v1';
 const CORE_ASSETS = [
-  '/',
-  '/manifest.webmanifest',
-  '/logo_te.svg'
+  './',
+  'manifest.webmanifest',
+  'logo_te.svg',
+  'icons/icon-192.png',
+  'icons/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -48,4 +50,3 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
-

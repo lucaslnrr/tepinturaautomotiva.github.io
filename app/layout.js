@@ -14,9 +14,9 @@ export default function RootLayout({ children }){
         <meta name="theme-color" content="#111827" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="manifest" href="/manifest.webmanifest" />
-        <link rel="icon" href="/logo_te.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/logo_te.svg" />
+        <link rel="manifest" href="manifest.webmanifest" />
+        <link rel="icon" href="icons/icon-192.png" type="image/png" />
+        <link rel="apple-touch-icon" href="icons/icon-192.png" />
       </head>
       <body className="min-h-screen">
         <ServiceWorkerRegister />
