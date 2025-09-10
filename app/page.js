@@ -341,65 +341,7 @@ export default function Page(){
   )
   }
 
-  // Prefer link-first (SSR upload), then native share, then text-only
-  async function onSendWhatsAppLinkFirst(){
-    const phoneRaw = state.client.whatsapp;
-    if(!phoneRaw){ alert('Preencha o WhatsApp do cliente.'); return; }
-    const waPhone = normalizeWhatsAppNumberBR(String(phoneRaw).replace(/\D+/g,''));
-    if(!waPhone){ alert('WhatsApp invalido.'); return; }
-    try{
-      const blob = await buildPdf(state);
-      const file = new File([blob], `orcamento-TEPintura-${state.meta.number}.pdf`, { type: 'application/pdf' });
-
-      // 1) Try SSR upload to get public link
-      let publicUrl = null;
-      try{
-        const base64 = await new Promise((resolve, reject)=>{
-          const r = new FileReader();
-          r.onload = () => { const res = String(r.result || ''); resolve(res.split(',').pop() || ''); };
-          r.onerror = reject;
-          r.readAsDataURL(blob);
-        });
-        const res = await fetch(`/api/whatsapp/upload?t=${Date.now()}`,{
-          method:'POST',
-          headers:{ 'Content-Type':'application/json', 'Cache-Control':'no-store' },
-          cache: 'no-store',
-          body: JSON.stringify({ fileName: file.name, pdfBase64: base64 })
-        });
-        const json = await res.json().catch(()=>null);
-        if(res.ok && json && json.url) publicUrl = json.url;
-      }catch(_){ }
-
-      if(publicUrl){
-        const msg = `Orcamento TE Pintura No ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF: ${publicUrl}`;
-        const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(msg)}`;
-        window.open(waUrl, '_blank');
-        return;
-      }
-
-      // 2) Native share with file
-      try{
-        if (navigator.canShare && navigator.canShare({ files:[file] })) {
-          await navigator.share({
-            title: `Orcamento TE Pintura No ${state.meta.number}`,
-            text: state.client.name ? `Cliente: ${state.client.name}` : '',
-            files:[file]
-          });
-          return;
-        }
-      }catch(_){ }
-
-      // 3) Text-only fallback
-      const fallbackMsg = `Orcamento TE Pintura No ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF enviado separadamente.`;
-      const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(fallbackMsg)}`;
-      window.open(waUrl, '_blank');
-    }catch(e){
-      console.error(e);
-      const fallbackMsg = `Orcamento TE Pintura No ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF enviado separadamente.`;
-      const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(normalizeWhatsAppNumberBR(String(state.client.whatsapp||'').replace(/\D+/g,'')))}&text=${encodeURIComponent(fallbackMsg)}`;
-      try{ window.open(waUrl, '_blank'); }catch(_){ alert('Erro ao compartilhar no WhatsApp.'); }
-    }
-  }
+  
 
 function genNumber(){
   const d = new Date();
