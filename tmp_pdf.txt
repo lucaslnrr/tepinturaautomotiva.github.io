@@ -52,7 +52,7 @@ async function loadLogoImage() {
  *  - totals: { discount, addition }
  */
 export async function buildPdfA4(data, opts = {}) {
-  const duplicate = (opts && 'duplicate' in opts) ? !!opts.duplicate : false;
+  const duplicate = (opts && 'duplicate' in opts) ? !!opts.duplicate : true;
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();   // 210
@@ -106,7 +106,7 @@ function renderSlip(doc, data, box, logoImg, isBottom) {
   doc.roundedRect(x - 1.5, y - 1.5, w + 3, h + 3, 2, 2);
 
   // Header
-  const headerH = 24;
+  const headerH = 22;
   doc.setFillColor(...BRAND.primary);
   doc.rect(x, y, w, headerH, 'F');
 
@@ -137,22 +137,11 @@ function renderSlip(doc, data, box, logoImg, isBottom) {
   doc.text(companyTag, titleX, y + 16);
 
   const contactsLine = [data.company?.address, data.company?.contacts].filter(Boolean).join(' • ');
-  if (false && contactsLine) {
+  if (contactsLine) {
     doc.text(contactsLine.replace(/\u0007/g, ' • '), x + w - innerPad, y + 16, { align: 'right' });
   }
 
   // Badge tipo + número
-  // Fix header right overlap and wrap contacts/address
-  { const rightX = x + w - innerPad - 52 - 3;
-    const fullContacts = [data.company?.address, data.company?.contacts].filter(Boolean).join(' • ');
-    const wrapped = doc.splitTextToSize([data.company?.cnpj, fullContacts].filter(Boolean).join(' • '), 90);
-    const clearX = x + w - innerPad - 86;
-    doc.setFillColor(...BRAND.primary);
-    doc.rect(clearX, y, 86, headerH, 'F');
-    doc.setTextColor(255);
-    doc.text(String(wrapped[0] || ''), rightX, y + 19, { align: 'right' });
-    if (wrapped.length > 1) doc.text(String(wrapped[1] || ''), rightX, y + 23, { align: 'right' });
-  }
   const badgeW = 52, badgeH = 12;
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(x + w - innerPad - badgeW, y + 4.5, badgeW, badgeH, 2, 2, 'F');
@@ -313,7 +302,8 @@ function renderSlip(doc, data, box, logoImg, isBottom) {
 
 // Backwards-compatible export expected by the app
 export async function buildPdf(data) {
-  return buildPdfA4(data, { duplicate: false });
+  return buildPdfA4(data);
 }
 
 export default buildPdf;
+

@@ -136,6 +136,7 @@ export default function Page(){
 
       <main className="grid gap-3">
         <section className="card p-3 grid gap-3">
+          <div className="text-sm font-semibold text-gray-600">Dados do cliente</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <div className="label">Cliente</div>
@@ -176,6 +177,12 @@ export default function Page(){
             </div>
           </div>
 
+          
+        </section>
+
+        {/* Forma de pagamento */}
+        <section className="card p-3 grid gap-3">
+          <div className="text-sm font-semibold text-gray-600">Forma de pagamento</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <div className="label">Forma de pagamento</div>
@@ -213,7 +220,7 @@ export default function Page(){
             <input className="input" placeholder="Ano" inputMode="numeric" value={state.vehicle.ano} onChange={e=>dispatch({type:'FIELD', path:['vehicle','ano'], value:e.target.value})}/>
             <input className="input" placeholder="KM" inputMode="numeric" value={state.vehicle.km} onChange={e=>dispatch({type:'FIELD', path:['vehicle','km'], value:e.target.value})}/>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="hidden">
             <ServiceAutocomplete
               src="/api/payments"
               placeholder=""
