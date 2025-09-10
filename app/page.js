@@ -203,7 +203,7 @@ export default function Page(){
 
         <section className="card p-3 grid gap-3">
           <div className="text-sm font-semibold text-gray-600">Dados do veículo</div>
-          <div className="hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <ServiceAutocomplete
               src="/api/brands"
               placeholder="Marca"
