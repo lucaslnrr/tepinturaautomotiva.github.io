@@ -80,79 +80,81 @@ export default function Page(){
     alert('PDF baixado. Anexe manualmente no WhatsApp.');
   }
 
-  async function onSendWhatsApp(){
-    const phoneRaw = state.client.whatsapp;
-    if(!phoneRaw){ alert('Preencha o WhatsApp do cliente.'); return; }
-    const phoneDigits = String(phoneRaw).replace(/\D+/g,'');
-    const waPhone = normalizeWhatsAppNumberBR(phoneDigits);
-    if(!waPhone){ alert('WhatsApp inválido.'); return; }
-    try{
-      const blob = await buildPdf(state);
-      // Link-first: try SSR upload to get a public URL
-      try{
-        const base64A = await new Promise((resolve, reject)=>{
-          const r = new FileReader();
-          r.onload = () => { const res = String(r.result || ''); resolve(res.split(',').pop() || ''); };
-          r.onerror = (e)=> reject(e);
-          r.readAsDataURL(blob);
-        });
-        const fileNameA = `orcamento-TEPintura-${state.meta.number}.pdf`;
-        const res = await fetch(`/api/whatsapp/upload?t=${Date.now()}`,{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Cache-Control':'no-store'},
-          cache:'no-store',
-          body: JSON.stringify({ fileName: fileNameA, pdfBase64: base64A })
-        });
-        const json = await res.json().catch(()=>null);
-        if(res.ok && json && json.url){
-          const msg = `Orcamento TE Pintura No ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF: ${json.url}`;
-          const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(msg)}`;
-          window.open(waUrl, '_blank');
-          return;
-        }
-      }catch(_){ /* continue to native share or old path */ }
-      // Tenta compartilhar o arquivo nativamente (Android) antes de gerar link
-      try {
-        const file = new File([blob], `orcamento-TEPintura-${state.meta.number}.pdf`, { type: 'application/pdf' });
-        if (navigator.canShare && navigator.canShare({ files:[file] })) {
-          await navigator.share({
-            title: `Orçamento TE Pintura Nº ${state.meta.number}`,
-            text: state.client.name ? `Cliente: ${state.client.name}` : '',
-            files: [file]
-          });
-          return;
-        }
-      } catch (_) { /* continua para upload/link */ }
-      const base64 = await new Promise((resolve, reject)=>{
-        const reader = new FileReader();
-        reader.onload = () => { const res = String(reader.result || ''); resolve(res.split(',').pop() || ''); };
-        reader.onerror = (e)=> reject(e);
-        reader.readAsDataURL(blob);
-      });
-      const fileName = `orcamento-TEPintura-${state.meta.number}.pdf`;
-      const upload = await fetch('/api/whatsapp/upload',{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ fileName, pdfBase64: base64 })
-      });
-      const data = await upload.json();
-      if(!upload.ok || !data?.url){
-        console.error('Upload failed', data);
-        const baseMsg = `Or	amento TE Pintura N	 ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF enviado separadamente.`;
-        const waUrlFallback = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(baseMsg)}`;
-        window.open(waUrlFallback, '_blank');
-        return;
-      }
-      const msg = `Orçamento TE Pintura Nº ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF: ${data.url}`;
+  async function onSendWhatsApp() {
+  const phoneRaw = state.client.whatsapp;
+  if (!phoneRaw) { alert('Preencha o WhatsApp do cliente.'); return; }
+
+  const phoneDigits = String(phoneRaw).replace(/\D+/g, '');
+  const waPhone = normalizeWhatsAppNumberBR(phoneDigits);
+  if (!waPhone) { alert('WhatsApp inválido.'); return; }
+
+  try {
+    // 1) Gera o PDF (usa seu buildPdf)
+    const blob = await buildPdf(state);
+
+    // 2) Converte para base64
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const res = String(reader.result || '');
+        resolve(res.split(',').pop() || '');
+      };
+      reader.onerror = (e) => reject(e);
+      reader.readAsDataURL(blob);
+    });
+
+    // 3) Upload ao Blob (URL pública)
+    const fileName = `orcamento-TEPintura-${state.meta.number}.pdf`;
+    const upload = await fetch('/api/whatsapp/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      cache: 'no-store',
+      body: JSON.stringify({ fileName, pdfBase64: base64 })
+    });
+    const data = await upload.json();
+
+    if (upload.ok && data?.url) {
+      const msg =
+        `Orçamento TE Pintura Nº ${state.meta.number}\n` +
+        (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
+        `PDF: ${data.url}`;
+
       const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(msg)}`;
       window.open(waUrl, '_blank');
-    }catch(e){
-      console.error(e);
-      // Fallback: open WhatsApp with text-only message if upload/generation fails
-      const baseMsg = `Orcamento TE Pintura No ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF enviado separadamente.`;
-      const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(baseMsg)}`;
-      try { window.open(waUrl, '_blank'); } catch(_){ alert('Erro ao compartilhar no WhatsApp.'); }
+      return;
     }
+
+    // 4) Fallback: compartilhar nativo (Android) se disponível
+    try {
+      const file = new File([blob], fileName, { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: `Orçamento TE Pintura Nº ${state.meta.number}`,
+          text: state.client.name ? `Cliente: ${state.client.name}` : '',
+          files: [file]
+        });
+        return;
+      }
+    } catch { /* segue para último fallback */ }
+
+    // 5) Último fallback: mensagem sem link
+    const fallbackMsg =
+      `Orçamento TE Pintura Nº ${state.meta.number}\n` +
+      (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
+      `PDF enviado separadamente.`;
+
+    const waUrlFallback = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(fallbackMsg)}`;
+    window.open(waUrlFallback, '_blank');
+  } catch (e) {
+    console.error(e);
+    const fallbackMsg =
+      `Orçamento TE Pintura Nº ${state.meta.number}\n` +
+      (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
+      `PDF enviado separadamente.`;
+    const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(fallbackMsg)}`;
+    window.open(waUrl, '_blank');
   }
+}
 
   function onClear(){
     if(confirm('Limpar formulário?')){
