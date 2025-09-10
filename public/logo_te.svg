@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40" viewBox="0 0 240 80" fill="none">
+  <rect rx="12" width="240" height="80" fill="#111827"/>
+  <g transform="translate(14,14)">
+    <rect x="0" y="0" width="52" height="52" rx="10" fill="#facc15"/>
+    <path d="M12 28h16c6 0 10-4 10-10V10" stroke="#111827" stroke-width="6" stroke-linecap="round"/>
+    <path d="M12 40h28" stroke="#111827" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <text x="84" y="36" fill="#facc15" font-size="24" font-family="Segoe UI, Arial, sans-serif" font-weight="700">TE Pintura</text>
+  <text x="84" y="58" fill="#9ca3af" font-size="14" font-family="Segoe UI, Arial, sans-serif">Automotiva • Funilaria • Vitrificação</text>
+</svg>
