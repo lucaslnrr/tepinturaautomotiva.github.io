@@ -4,6 +4,7 @@ import ItemRow from '@/components/ItemRow';
 import InstallPromptButton from '@/components/InstallPromptButton';
 import { buildPdf } from '@/lib/pdf';
 import ServiceAutocomplete from '@/components/ServiceAutocomplete';
+import { DEFAULT_BRANDS, DEFAULT_MODELS, DEFAULT_COLORS } from '@/lib/cars-default';
 
 const initialState = {
   company: { contacts: 'R. Willy Thowart, 10 - Boa Vista, São Mateus - ES, 29931-310' },
@@ -208,15 +209,23 @@ export default function Page(){
               placeholder="Marca"
               value={state.vehicle.marca}
               onChange={(val)=>dispatch({type:'FIELD', path:['vehicle','marca'], value: val})}
+              extraParams={{ _fallback: DEFAULT_BRANDS }}
             />
             <ServiceAutocomplete
               src="/api/models"
               placeholder="Modelo"
               value={state.vehicle.modelo}
               onChange={(val)=>dispatch({type:'FIELD', path:['vehicle','modelo'], value: val})}
+              extraParams={{ brand: state.vehicle.marca, _fallback: DEFAULT_MODELS }}
             />
             <input className="input" placeholder="Placa" value={state.vehicle.placa} onChange={e=>dispatch({type:'FIELD', path:['vehicle','placa'], value:e.target.value})}/>
-            <input className="input" placeholder="Cor" value={state.vehicle.cor} onChange={e=>dispatch({type:'FIELD', path:['vehicle','cor'], value:e.target.value})}/>
+            <ServiceAutocomplete
+              src="/api/colors"
+              placeholder="Cor"
+              value={state.vehicle.cor}
+              onChange={(val)=>dispatch({type:'FIELD', path:['vehicle','cor'], value: val})}
+              extraParams={{ _fallback: DEFAULT_COLORS }}
+            />
             <input className="input" placeholder="Ano" inputMode="numeric" value={state.vehicle.ano} onChange={e=>dispatch({type:'FIELD', path:['vehicle','ano'], value:e.target.value})}/>
             <input className="input" placeholder="KM" inputMode="numeric" value={state.vehicle.km} onChange={e=>dispatch({type:'FIELD', path:['vehicle','km'], value:e.target.value})}/>
           </div>

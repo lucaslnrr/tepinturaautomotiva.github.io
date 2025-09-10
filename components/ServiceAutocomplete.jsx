@@ -34,10 +34,29 @@ export default function ServiceAutocomplete({ value, onChange, onSelect, placeho
         if (!res.ok) throw new Error('bad status');
         const json = await res.json();
         setItems(Array.isArray(json.items) ? json.items : []);
-      } catch (_) { /* ignore */ }
+      } catch (_) {
+        // Fallback to local list when API is unavailable (static export/offline)
+        try {
+          const local = (extraParams && Array.isArray(extraParams._fallback)) ? extraParams._fallback : [];
+          const norm = (s) => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+          const qn = norm(query);
+          const brand = extraParams && extraParams.brand ? norm(extraParams.brand) : '';
+          let filtered = local;
+          if (brand) {
+            filtered = filtered.filter(it => {
+              const b = norm(it.brand || '');
+              const n = norm(it.name || '');
+              if (b) return b === brand;
+              return brand && n.startsWith(brand + ' ');
+            });
+          }
+          if (qn) filtered = filtered.filter(it => norm(it.name).includes(qn));
+          setItems(filtered.slice(0, 20));
+        } catch(_e) { setItems([]); }
+      }
     }, 200);
     return () => { clearTimeout(t); controller.abort(); };
-  }, [q, src]);
+  }, [q, src, JSON.stringify(extraParams)]);
 
   function pick(item){
     setOpen(false);
@@ -70,8 +89,15 @@ export default function ServiceAutocomplete({ value, onChange, onSelect, placeho
               if (res.ok) {
                 const json = await res.json();
                 setItems(Array.isArray(json.items) ? json.items : []);
+              } else {
+                // fallback load
+                const local = (extraParams && Array.isArray(extraParams._fallback)) ? extraParams._fallback : [];
+                setItems(Array.isArray(local) ? local.slice(0,20) : []);
               }
-            } catch (_) { /* ignore */ }
+            } catch (_) {
+              const local = (extraParams && Array.isArray(extraParams._fallback)) ? extraParams._fallback : [];
+              setItems(Array.isArray(local) ? local.slice(0,20) : []);
+            }
           }
         }}
         autoComplete="off"
