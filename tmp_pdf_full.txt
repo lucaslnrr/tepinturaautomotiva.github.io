@@ -22,7 +22,7 @@ function brl(v) {
 function parseBR(x) {
   if (typeof x === 'number') return x;
   if (!x) return 0;
-  return Number(String(x).replace(/\./g, '').replace(',', '.')) || Number(x) || 0;
+  return Number(String(x).replace(/[data.company?.address, data.company?.contacts]/g, '').replace(',', '.')) || Number(x) || 0;
 }
 function pad2(n) { return String(n).padStart(2, '0'); }
 
@@ -124,7 +124,7 @@ function renderSlip(doc, data, box, logoImg) {
 
   const companyName = data.company?.name || 'TE PINTURA AUTOMOTIVA';
   const companyTag  = data.company?.tagline || 'Pintura automotiva • Funilaria • Reparos • Vitrificação';
-  const rightInfoRaw = [data.company?.address, data.company?.contacts]
+  const rightInfoRaw = [data.company?.cnpj, data.company?.address, data.company?.contacts]
     .filter(Boolean)
     .join(' • ')
     .replace(/\u0007/g, ' • ');
@@ -412,3 +412,4 @@ export async function buildPdf(data) {
 }
 
 export default buildPdf;
+

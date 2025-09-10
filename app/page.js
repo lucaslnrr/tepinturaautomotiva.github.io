@@ -112,7 +112,10 @@ export default function Page(){
       window.open(waUrl, '_blank');
     }catch(e){
       console.error(e);
-      alert('Erro ao gerar/compartilhar PDF.');
+      // Fallback: open WhatsApp with text-only message if upload/generation fails
+      const baseMsg = `Orcamento TE Pintura No ${state.meta.number}\n${state.client.name ? 'Cliente: ' + state.client.name + '\n' : ''}PDF enviado separadamente.`;
+      const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(baseMsg)}`;
+      try { window.open(waUrl, '_blank'); } catch(_){ alert('Erro ao compartilhar no WhatsApp.'); }
     }
   }
 
