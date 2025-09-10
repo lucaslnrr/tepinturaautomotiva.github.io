@@ -26,6 +26,15 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
 
+  // Never cache API routes; always go to the network
+  try {
+    const url = new URL(req.url);
+    if (url.pathname.startsWith('/api/')) {
+      event.respondWith(fetch(req));
+      return;
+    }
+  } catch (_) {}
+
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)

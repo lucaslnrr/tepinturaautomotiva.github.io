@@ -1,0 +1,19 @@
+          await navigator.share({
+            title: `Orçamento TE Pintura Nº ${state.meta.number}`,
+            text: state.client.name ? `Cliente: ${state.client.name}` : '',
+            files: [file]
+          });
+          return;
+        }
+      } catch (_) { /* continua para upload/link */ }
+      const base64 = await new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.onload = () => { const res = String(reader.result || ''); resolve(res.split(',').pop() || ''); };
+        reader.onerror = (e)=> reject(e);
+        reader.readAsDataURL(blob);
+      });
+      const fileName = `orcamento-TEPintura-${state.meta.number}.pdf`;
+      const upload = await fetch('/api/whatsapp/upload',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ fileName, pdfBase64: base64 })
+      });
