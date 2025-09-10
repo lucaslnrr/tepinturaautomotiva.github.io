@@ -1,0 +1,10 @@
+
+  // Veículo
+  const yCar = yClient + 20;
+  doc.roundedRect(x, yCar, w, 18, 2, 2);
+  const v = data.vehicle || {};
+  doc.text(`Veículo: ${v.marca || ''} / ${v.modelo || ''}   Ano: ${v.ano || ''}   Cor: ${v.cor || ''}`, x + innerPad, yCar + 6);
+  doc.text(`Placa: ${v.placa || ''}`, x + innerPad, yCar + 12);
+  doc.text(`KM: ${v.km || ''}`, x + w - innerPad, yCar + 12, { align: 'right' });
+  doc.text(`Cond. Pagto: ${meta.pagamento || ''}`, x + innerPad, yCar + 18);
+  doc.text(`Prazo Execução: ${meta.prazo || ''}`, x + w - innerPad, yCar + 18, { align: 'right' });
