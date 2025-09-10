@@ -88,6 +88,18 @@ export default function Page(){
     if(!waPhone){ alert('WhatsApp inválido.'); return; }
     try{
       const blob = await buildPdf(state);
+      // Tenta compartilhar o arquivo nativamente (Android) antes de gerar link
+      try {
+        const file = new File([blob], `orcamento-TEPintura-${state.meta.number}.pdf`, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files:[file] })) {
+          await navigator.share({
+            title: `Orçamento TE Pintura Nº ${state.meta.number}`,
+            text: state.client.name ? `Cliente: ${state.client.name}` : '',
+            files: [file]
+          });
+          return;
+        }
+      } catch (_) { /* continua para upload/link */ }
       const base64 = await new Promise((resolve, reject)=>{
         const reader = new FileReader();
         reader.onload = () => { const res = String(reader.result || ''); resolve(res.split(',').pop() || ''); };
