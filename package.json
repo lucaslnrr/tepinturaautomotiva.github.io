@@ -6,13 +6,14 @@
     "dev": "next dev",
     "dev:lan": "next dev --hostname 0.0.0.0 --port 3001",
     "build": "next build",
-    "export": "next build && next export -o out",
+    "export": "set NEXT_OUTPUT_EXPORT=true&& next build && next export -o out",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.2",
+    "@vercel/blob": "^0.24.0",
     "next": "14.2.13",
     "react": "18.3.1",
     "react-dom": "18.3.1"

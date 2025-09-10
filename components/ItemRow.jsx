@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef } from 'react';
+import ServiceAutocomplete from '@/components/ServiceAutocomplete';
 
 export default function ItemRow({ index, item, onChange, onRemove }){
   const descRef = useRef(null);
@@ -11,12 +12,15 @@ export default function ItemRow({ index, item, onChange, onRemove }){
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px_40px] gap-2 items-center">
-      <input
-        ref={descRef}
-        className="input"
-        placeholder="Descrição (ex.: Pintura para-choque dianteiro)"
+      <ServiceAutocomplete
         value={item.desc}
-        onChange={(e) => onChange(index, { ...item, desc: e.target.value })}
+        onChange={(val)=> onChange(index, { ...item, desc: val })}
+        onSelect={(svc)=> {
+          // If service has a default price, auto-fill when unit is empty
+          const priceStr = typeof svc.price === 'number' ? String((svc.price/100).toFixed(2)).replace('.',',') : item.unit;
+          onChange(index, { ...item, desc: svc.name, unit: item.unit || priceStr });
+        }}
+        placeholder="Descrição (ex.: Pintura para-choque dianteiro)"
       />
       <input
         className="input text-right"
@@ -40,4 +44,3 @@ export default function ItemRow({ index, item, onChange, onRemove }){
     </div>
   );
 }
-
