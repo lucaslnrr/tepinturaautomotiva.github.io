@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-export default function ServiceAutocomplete({ value, onChange, onSelect, placeholder = 'Descrição do serviço' }) {
+export default function ServiceAutocomplete({ value, onChange, onSelect, placeholder = 'Descrição do serviço', src = '/api/services', extraParams = {} }) {
   const [q, setQ] = useState(value || '');
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([]);
@@ -24,7 +24,14 @@ export default function ServiceAutocomplete({ value, onChange, onSelect, placeho
     abortRef.current = controller;
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/services?q=${encodeURIComponent(query)}`, { signal: controller.signal });
+        const url = new URL(src, window.location.origin);
+        url.searchParams.set('q', query);
+        if (extraParams && typeof extraParams === 'object') {
+          for (const [k, v] of Object.entries(extraParams)) {
+            if (v != null && String(v).trim() !== '') url.searchParams.set(k, String(v));
+          }
+        }
+        const res = await fetch(url.toString(), { signal: controller.signal });
         if (!res.ok) throw new Error('bad status');
         const json = await res.json();
         setItems(Array.isArray(json.items) ? json.items : []);
@@ -53,11 +60,8 @@ export default function ServiceAutocomplete({ value, onChange, onSelect, placeho
         <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-soft max-h-64 overflow-auto">
           {items.map((it, idx)=> (
             <button key={idx} type="button" onClick={()=>pick(it)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between">
+                    className="w-full text-left px-3 py-2 hover:bg-gray-50">
               <span className="truncate pr-2">{it.name}</span>
-              {typeof it.price === 'number' && (
-                <span className="text-xs text-gray-600 whitespace-nowrap">{brl((it.price||0)/100)}</span>
-              )}
             </button>
           ))}
         </div>
@@ -66,7 +70,4 @@ export default function ServiceAutocomplete({ value, onChange, onSelect, placeho
   );
 }
 
-function brl(n){
-  return new Intl.NumberFormat('pt-BR', {style:'currency',currency:'BRL'}).format(Number(n||0));
-}
-
+// no currency display; suggestions only show description

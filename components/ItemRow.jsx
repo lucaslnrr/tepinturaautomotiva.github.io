@@ -16,9 +16,7 @@ export default function ItemRow({ index, item, onChange, onRemove }){
         value={item.desc}
         onChange={(val)=> onChange(index, { ...item, desc: val })}
         onSelect={(svc)=> {
-          // If service has a default price, auto-fill when unit is empty
-          const priceStr = typeof svc.price === 'number' ? String((svc.price/100).toFixed(2)).replace('.',',') : item.unit;
-          onChange(index, { ...item, desc: svc.name, unit: item.unit || priceStr });
+          onChange(index, { ...item, desc: svc.name });
         }}
         placeholder="Descrição (ex.: Pintura para-choque dianteiro)"
       />

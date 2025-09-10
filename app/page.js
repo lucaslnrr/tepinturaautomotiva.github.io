@@ -3,20 +3,21 @@ import { useEffect, useMemo, useReducer } from 'react';
 import ItemRow from '@/components/ItemRow';
 import InstallPromptButton from '@/components/InstallPromptButton';
 import { buildPdf } from '@/lib/pdf';
+import ServiceAutocomplete from '@/components/ServiceAutocomplete';
 
 const initialState = {
-  company: { contacts: 'Av. Exemplo, 123 • Franca-SP • (16) 99999-0000' },
+  company: { contacts: 'R. Willy Thowart, 10 - Boa Vista, São Mateus - ES, 29931-310' },
   meta: {
     number: genNumber(),
     date: new Date().toLocaleDateString('pt-BR'),
-    validade: 7,
-    seller: 'Atendente',
+    validade: 3,
+    seller: 'Tiago',
     pagamento: 'PIX / Cartão / À vista',
-    prazo: '3 a 7 dias úteis',
-    obs: 'Garantia de pintura com verniz automotivo. Peças sujeitas a avaliação técnica.'
+    prazo: '10 dias úteis',
+    obs: ''
   },
   client: { name:'', whatsapp:'', email:'' },
-  vehicle: { marca:'', modelo:'', placa:'', cor:'', ano:'', chassi:'', km:'' },
+  vehicle: { marca:'', modelo:'', placa:'', cor:'', ano:'', km:'' },
   items: [
     { desc:'Pintura de para-choque', unit:'350' }
   ],
@@ -64,6 +65,31 @@ export default function Page(){
     a.href = url; a.download = file.name; document.body.appendChild(a); a.click();
     setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
     alert('PDF baixado. Anexe manualmente no WhatsApp.');
+  }
+
+  async function onSendWhatsApp(){
+    const phone = state.client.whatsapp;
+    if(!phone){ alert('Preencha o WhatsApp do cliente.'); return; }
+    try{
+      const blob = await buildPdf(state);
+      const arrayBuffer = await blob.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const fileName = `orcamento-TEPintura-${state.meta.number}.pdf`;
+      const res = await fetch('/api/whatsapp/send',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ phone, fileName, pdfBase64: base64 })
+      });
+      if(!res.ok){
+        const err = await res.json().catch(()=>({}));
+        console.error('WhatsApp send error', err);
+        alert('Falha ao enviar no WhatsApp. Verifique configurações no servidor.');
+        return;
+      }
+      alert('Enviado ao WhatsApp!');
+    }catch(e){
+      console.error(e);
+      alert('Erro ao gerar/enviar PDF.');
+    }
   }
 
   function onClear(){
@@ -133,16 +159,30 @@ export default function Page(){
         <section className="card p-3 grid gap-3">
           <div className="text-sm font-semibold text-gray-600">Dados do veículo</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input className="input" placeholder="Marca" value={state.vehicle.marca} onChange={e=>dispatch({type:'FIELD', path:['vehicle','marca'], value:e.target.value})}/>
-            <input className="input" placeholder="Modelo" value={state.vehicle.modelo} onChange={e=>dispatch({type:'FIELD', path:['vehicle','modelo'], value:e.target.value})}/>
+            <ServiceAutocomplete
+              src="/api/brands"
+              placeholder="Marca"
+              value={state.vehicle.marca}
+              onChange={(val)=>dispatch({type:'FIELD', path:['vehicle','marca'], value: val})}
+            />
+            <ServiceAutocomplete
+              src="/api/models"
+              placeholder="Modelo"
+              value={state.vehicle.modelo}
+              onChange={(val)=>dispatch({type:'FIELD', path:['vehicle','modelo'], value: val})}
+            />
             <input className="input" placeholder="Placa" value={state.vehicle.placa} onChange={e=>dispatch({type:'FIELD', path:['vehicle','placa'], value:e.target.value})}/>
             <input className="input" placeholder="Cor" value={state.vehicle.cor} onChange={e=>dispatch({type:'FIELD', path:['vehicle','cor'], value:e.target.value})}/>
             <input className="input" placeholder="Ano" inputMode="numeric" value={state.vehicle.ano} onChange={e=>dispatch({type:'FIELD', path:['vehicle','ano'], value:e.target.value})}/>
-            <input className="input" placeholder="Chassi" value={state.vehicle.chassi} onChange={e=>dispatch({type:'FIELD', path:['vehicle','chassi'], value:e.target.value})}/>
             <input className="input" placeholder="KM" inputMode="numeric" value={state.vehicle.km} onChange={e=>dispatch({type:'FIELD', path:['vehicle','km'], value:e.target.value})}/>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input className="input" placeholder="Condição de pagamento (ex.: PIX / Cartão / 3x)" value={state.meta.pagamento} onChange={e=>dispatch({type:'FIELD', path:['meta','pagamento'], value:e.target.value})}/>
+            <ServiceAutocomplete
+              src="/api/payments"
+              placeholder="Forma de pagamento (ex.: PIX / Cartão / 3x)"
+              value={state.meta.pagamento}
+              onChange={(val)=>dispatch({type:'FIELD', path:['meta','pagamento'], value: val})}
+            />
             <input className="input" placeholder="Prazo de execução" value={state.meta.prazo} onChange={e=>dispatch({type:'FIELD', path:['meta','prazo'], value:e.target.value})}/>
           </div>
         </section>
@@ -193,9 +233,10 @@ export default function Page(){
         </section>
 
         <div className="sticky-actions mt-1">
-          <div className="card p-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="card p-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button className="btn btn-outline" onClick={onClear}>Limpar</button>
-            <button className="btn btn-primary" onClick={onGenerate}>Gerar PDF & Compartilhar</button>
+            <button className="btn btn-outline" onClick={onGenerate}>Baixar PDF</button>
+            <button className="btn btn-primary" onClick={onSendWhatsApp}>Enviar no WhatsApp</button>
           </div>
           <div className="mt-2">
             <InstallPromptButton />
