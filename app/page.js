@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useMemo, useReducer } from 'react';
 import ItemRow from '@/components/ItemRow';
-import InstallPromptButton from '@/components/InstallPromptButton';
 import { buildPdf } from '@/lib/pdf';
 import ServiceAutocomplete from '@/components/ServiceAutocomplete';
 import { DEFAULT_BRANDS, DEFAULT_MODELS, DEFAULT_COLORS } from '@/lib/cars-default';
@@ -353,9 +352,6 @@ export default function Page(){
             <button className="btn btn-outline" onClick={onClear}>Limpar</button>
             <button className="btn btn-outline" onClick={onGenerate}>Baixar PDF</button>
             <button className="btn btn-primary" onClick={onSendWhatsApp}>Enviar no WhatsApp</button>
-          </div>
-          <div className="mt-2">
-            <InstallPromptButton />
           </div>
           <p className="text-[11px] text-gray-500 text-center mt-1">O botão de compartilhar usa o recurso nativo do Android quando disponível.</p>
         </div>

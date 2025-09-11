@@ -8,7 +8,7 @@ export default function ServiceWorkerRegister() {
       const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
       if (!isSecure) return; // SW requires secure context
       // Register ASAP to help installability; no need to wait for load
-      try { navigator.serviceWorker.register('sw.js'); } catch (_) {}
+      try { navigator.serviceWorker.register('/sw.js'); } catch (_) {}
     }
   }, []);
   return null;
