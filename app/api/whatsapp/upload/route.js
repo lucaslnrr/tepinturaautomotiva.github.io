@@ -24,6 +24,7 @@ export async function POST(req) {
       access: 'public',
       contentType: 'application/pdf',
       addRandomSuffix: false,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     return NextResponse.json({ ok: true, url, key });

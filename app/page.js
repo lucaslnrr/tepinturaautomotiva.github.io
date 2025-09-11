@@ -81,80 +81,82 @@ export default function Page(){
   }
 
   async function onSendWhatsApp() {
-  const phoneRaw = state.client.whatsapp;
-  if (!phoneRaw) { alert('Preencha o WhatsApp do cliente.'); return; }
+    const phoneRaw = state.client.whatsapp;
+    if (!phoneRaw) { alert('Preencha o WhatsApp do cliente.'); return; }
 
-  const phoneDigits = String(phoneRaw).replace(/\D+/g, '');
-  const waPhone = normalizeWhatsAppNumberBR(phoneDigits);
-  if (!waPhone) { alert('WhatsApp inválido.'); return; }
+    const phoneDigits = String(phoneRaw).replace(/\D+/g, '');
+    const waPhone = normalizeWhatsAppNumberBR(phoneDigits);
+    if (!waPhone) { alert('WhatsApp inválido.'); return; }
 
-  try {
-    // 1) Gera o PDF (usa seu buildPdf)
-    const blob = await buildPdf(state);
+    try {
+      // 1) Gera o PDF (usa seu buildPdf)
+      const blob = await buildPdf(state);
 
-    // 2) Converte para base64
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const res = String(reader.result || '');
-        resolve(res.split(',').pop() || '');
-      };
-      reader.onerror = (e) => reject(e);
-      reader.readAsDataURL(blob);
-    });
+      // 2) Converte para base64 (sem TS generic em arquivo .js)
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const res = String(reader.result || '');
+          resolve(res.split(',').pop() || '');
+        };
+        reader.onerror = (e) => reject(e);
+        reader.readAsDataURL(blob);
+      });
 
-    // 3) Upload ao Blob (URL pública)
-    const fileName = `orcamento-TEPintura-${state.meta.number}.pdf`;
-    const upload = await fetch('/api/whatsapp/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      cache: 'no-store',
-      body: JSON.stringify({ fileName, pdfBase64: base64 })
-    });
-    const data = await upload.json();
+      const fileName = `orcamento-TEPintura-${state.meta.number}.pdf`;
 
-    if (upload.ok && data?.url) {
-      const msg =
+      // 3) Upload ao Blob e abrir WhatsApp com link
+      try {
+        const upload = await fetch('/api/whatsapp/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+          cache: 'no-store',
+          body: JSON.stringify({ fileName, pdfBase64: base64 })
+        });
+        const data = await upload.json();
+        if (upload.ok && data?.url) {
+          const msg =
+            `Orçamento TE Pintura Nº ${state.meta.number}\n` +
+            (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
+            `PDF: ${data.url}`;
+          const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(msg)}`;
+          window.open(waUrl, '_blank');
+          return;
+        }
+      } catch (err) {
+        console.warn('Upload falhou, tentando outros fallbacks...', err);
+      }
+
+      // 4) Fallback: compartilhar nativo (Android) se disponível
+      try {
+        const file = new File([blob], fileName, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: `Orçamento TE Pintura Nº ${state.meta.number}`,
+            text: state.client.name ? `Cliente: ${state.client.name}` : '',
+            files: [file]
+          });
+          return;
+        }
+      } catch { /* segue para último fallback */ }
+
+      // 5) Último fallback: mensagem sem link
+      const fallbackMsg =
         `Orçamento TE Pintura Nº ${state.meta.number}\n` +
         (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
-        `PDF: ${data.url}`;
-
-      const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(msg)}`;
+        `PDF enviado separadamente.`;
+      const waUrlFallback = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(fallbackMsg)}`;
+      window.open(waUrlFallback, '_blank');
+    } catch (e) {
+      console.error(e);
+      const fallbackMsg =
+        `Orçamento TE Pintura Nº ${state.meta.number}\n` +
+        (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
+        `PDF enviado separadamente.`;
+      const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(fallbackMsg)}`;
       window.open(waUrl, '_blank');
-      return;
     }
-
-    // 4) Fallback: compartilhar nativo (Android) se disponível
-    try {
-      const file = new File([blob], fileName, { type: 'application/pdf' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: `Orçamento TE Pintura Nº ${state.meta.number}`,
-          text: state.client.name ? `Cliente: ${state.client.name}` : '',
-          files: [file]
-        });
-        return;
-      }
-    } catch { /* segue para último fallback */ }
-
-    // 5) Último fallback: mensagem sem link
-    const fallbackMsg =
-      `Orçamento TE Pintura Nº ${state.meta.number}\n` +
-      (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
-      `PDF enviado separadamente.`;
-
-    const waUrlFallback = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(fallbackMsg)}`;
-    window.open(waUrlFallback, '_blank');
-  } catch (e) {
-    console.error(e);
-    const fallbackMsg =
-      `Orçamento TE Pintura Nº ${state.meta.number}\n` +
-      (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
-      `PDF enviado separadamente.`;
-    const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(fallbackMsg)}`;
-    window.open(waUrl, '_blank');
   }
-}
 
   function onClear(){
     if(confirm('Limpar formulário?')){

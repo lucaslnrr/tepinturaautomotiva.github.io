@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function normalizePhoneBR(raw){
   const digits = String(raw || '').replace(/\D+/g,'');
@@ -37,6 +39,7 @@ export async function POST(req){
       access: 'public',
       contentType: 'application/pdf',
       addRandomSuffix: false,
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
     // Send WhatsApp message with document link
@@ -64,4 +67,3 @@ export async function POST(req){
     return NextResponse.json({ error:'failed', message:String(e) }, { status:500 });
   }
 }
-
