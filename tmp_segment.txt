@@ -1,0 +1,41 @@
+
+  const meta = data.meta || {};
+  const tipo = String(meta.type || 'ORÇAMENTO').toUpperCase();
+  const num = String(meta.number || '');
+
+  const companyName = data.company?.name || 'TE PINTURA AUTOMOTIVA';
+  const companyTag  = data.company?.tagline || 'Pintura automotiva • Funilaria • Reparos • Vitrificação';
+  const rightInfoRaw = [data.company?.address, data.company?.contacts]
+    .filter(Boolean)
+    .join(' • ')
+    .replace(/\u0007/g, ' • ');
+
+  // Prepare text wraps *antes* de desenhar o fundo
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  const nameLines = doc.splitTextToSize(companyName, midColW);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  const tagLines  = doc.splitTextToSize(companyTag, midColW);
+
+  doc.setFontSize(8.6);
+  const rightLines = doc.splitTextToSize(rightInfoRaw, rightColW);
+
+  const logoTargetH = 13.5;
+  const logoRatio = (logoImg?.naturalWidth && logoImg?.naturalHeight)
+    ? (logoImg.naturalWidth / logoImg.naturalHeight)
+    : 3;
+  const logoTargetW = logoImg ? Math.min(36, logoTargetH * logoRatio) : 0;
+
+  // calcula a altura mínima do header considerando as colunas
+  const cnpjText = (data.company && data.company.cnpj) ? String(data.company.cnpj) : '';
+  const contentHeights = [
+    // left col (logo)
+    logoImg ? logoTargetH + 9 : 18,
+    // mid col (name + tag)
+    6 + nameLines.length * (lineH + 1) + tagLines.length * (lineH - 0.2) + (cnpjText ? (lineH - 0.2) : 0) + 6,
+    // right col (info)
+    6 + rightLines.length * (lineH - 0.2) + 8
+  ];
+  const badgeH = 12 + 9; // badge + folga
