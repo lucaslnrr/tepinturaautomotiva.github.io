@@ -127,6 +127,21 @@ export default function Page(){
             const shortJson = await shortRes.json().catch(()=>({}));
             if (shortRes.ok && shortJson?.shortUrl) linkToSend = String(shortJson.shortUrl);
           } catch {}
+          try {
+            const sendRes = await fetch('/api/whatsapp/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ phone: waPhone, url: linkToSend, fileName })
+            });
+            const sendJson = await sendRes.json().catch(()=>({}));
+            if (sendRes.ok && sendJson?.ok) {
+              if (popup && !popup.closed) { popup.close(); }
+              alert('PDF enviado via WhatsApp.');
+              return;
+            }
+          } catch (err) {
+            console.warn('Send via WhatsApp API failed', err);
+          }
           const msg =
             `Orçamento TE Pintura Nº ${state.meta.number}\n` +
             (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
