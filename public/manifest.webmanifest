@@ -1,12 +1,16 @@
 {
+  "id": "/",
   "name": "TE Pintura - Orçamentos",
   "short_name": "Orçamentos TE",
-  "description": "Gerador de orçamento em PDF (A5) para TE Pintura Automotiva",
-  "start_url": "./",
-  "scope": "./",
+  "description": "Gerador de orçamento em PDF para TE Pintura Automotiva",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "theme_color": "#111827",
   "background_color": "#ffffff",
+  "prefer_related_applications": false,
+  "categories": ["business", "productivity"],
   "icons": [
     {
       "src": "icons/icon-192.png",
@@ -28,3 +32,4 @@
     }
   ]
 }
+
