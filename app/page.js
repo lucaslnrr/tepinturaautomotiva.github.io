@@ -117,10 +117,20 @@ export default function Page(){
         });
         const data = await upload.json();
         if (upload.ok && data?.url) {
+          let linkToSend = data.url;
+          try {
+            const shortRes = await fetch('/api/shorten', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ target: data.url })
+            });
+            const shortJson = await shortRes.json().catch(()=>({}));
+            if (shortRes.ok && shortJson?.shortUrl) linkToSend = String(shortJson.shortUrl);
+          } catch {}
           const msg =
             `Orçamento TE Pintura Nº ${state.meta.number}\n` +
             (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
-            `PDF: ${data.url}`;
+            `PDF: ${linkToSend}`;
           const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(msg)}`;
           if (popup && !popup.closed) {
             popup.location = waUrl;
