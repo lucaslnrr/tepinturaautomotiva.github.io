@@ -89,6 +89,9 @@ export default function Page(){
     if (!waPhone) { alert('WhatsApp inválido.'); return; }
 
     try {
+      // Open a placeholder window immediately to avoid popup blocking on mobile browsers.
+      let popup = null;
+      try { popup = window.open('about:blank', '_blank'); } catch(_) {}
       // 1) Gera o PDF (usa seu buildPdf)
       const blob = await buildPdf(state);
 
@@ -120,7 +123,12 @@ export default function Page(){
             (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
             `PDF: ${data.url}`;
           const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(msg)}`;
-          window.open(waUrl, '_blank');
+          if (popup && !popup.closed) {
+            popup.location = waUrl;
+            try { popup.focus(); } catch(_) {}
+          } else {
+            window.open(waUrl, '_blank');
+          }
           return;
         }
       } catch (err) {
@@ -146,7 +154,12 @@ export default function Page(){
         (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
         `PDF enviado separadamente.`;
       const waUrlFallback = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(fallbackMsg)}`;
-      window.open(waUrlFallback, '_blank');
+      if (popup && !popup.closed) {
+        popup.location = waUrlFallback;
+        try { popup.focus(); } catch(_) {}
+      } else {
+        window.open(waUrlFallback, '_blank');
+      }
     } catch (e) {
       console.error(e);
       const fallbackMsg =
@@ -154,7 +167,13 @@ export default function Page(){
         (state.client.name ? `Cliente: ${state.client.name}\n` : '') +
         `PDF enviado separadamente.`;
       const waUrl = `https://api.whatsapp.com/send?phone=${encodeURIComponent(waPhone)}&text=${encodeURIComponent(fallbackMsg)}`;
-      window.open(waUrl, '_blank');
+      try {
+        let popup2 = window.open('about:blank', '_blank');
+        if (popup2 && !popup2.closed) { popup2.location = waUrl; try { popup2.focus(); } catch(_) {} }
+        else { window.open(waUrl, '_blank'); }
+      } catch(_) {
+        window.open(waUrl, '_blank');
+      }
     }
   }
 
